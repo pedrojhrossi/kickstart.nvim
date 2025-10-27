@@ -1,3 +1,17 @@
+-- Set the standard 4-space indentation for Java files
+
+-- 1. Tabstop: How wide a hard tab character looks (4 spaces)
+vim.bo.tabstop = 4
+
+-- 2. Shiftwidth: How many spaces to use for indentation operations (>> and <<)
+vim.bo.shiftwidth = 4
+
+-- 3. Expandtab: Inserts spaces instead of a hard tab character when you press the <Tab> key
+vim.bo.expandtab = true
+
+-- 4. Softtabstop: Allows the <Tab> and <Backspace> keys to behave like 4 spaces
+vim.bo.softtabstop = 4
+
 local home = os.getenv 'HOME'
 local mason_path = vim.fn.stdpath 'data' .. '/mason'
 -- local root_markers = { 'gradlew', '.git', 'mvnw' }
