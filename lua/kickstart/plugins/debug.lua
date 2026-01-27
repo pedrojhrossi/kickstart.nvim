@@ -95,28 +95,31 @@ return {
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
         'delve',
+        'java-debug-adapter',
+        'java-test',
       },
     }
 
-    -- Dap UI setup
-    -- For more information, see |:help nvim-dap-ui|
-    dapui.setup {
-      -- Set icons to characters that are more likely to work in every terminal.
-      --    Feel free to remove or use ones that you like more! :)
-      --    Don't feel like these are good choices.
-      icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
-      controls = {
-        icons = {
-          pause = '⏸',
-          play = '▶',
-          step_into = '⏎',
-          step_over = '⏭',
-          step_out = '⏮',
-          step_back = 'b',
-          run_last = '▶▶',
-          terminate = '⏹',
-          disconnect = '⏏',
-        },
+    -- Java Debugger Configuration
+    dap.adapters.java = {
+      type = 'executable',
+      command = '/home/qmatic/.local/share/nvim/mason/bin/java-debug-adapter',
+      args = {},
+    }
+
+    dap.configurations.java = {
+      {
+        name = 'Debug (Attach)',
+        request = 'attach',
+        type = 'java',
+        project_path = vim.fn.getcwd(),
+      },
+      {
+        name = 'Debug (Launch)',
+        request = 'launch',
+        type = 'java',
+        project_path = vim.fn.getcwd(),
+        mainClass = 'org.example.Main', -- Replace with your main class
       },
     }
 
