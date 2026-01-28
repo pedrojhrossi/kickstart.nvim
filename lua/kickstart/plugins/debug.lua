@@ -100,28 +100,8 @@ return {
       },
     }
 
-    -- Java Debugger Configuration
-    dap.adapters.java = {
-      type = 'executable',
-      command = '/home/qmatic/.local/share/nvim/mason/bin/java-debug-adapter',
-      args = {},
-    }
-
-    dap.configurations.java = {
-      {
-        name = 'Debug (Attach)',
-        request = 'attach',
-        type = 'java',
-        project_path = vim.fn.getcwd(),
-      },
-      {
-        name = 'Debug (Launch)',
-        request = 'launch',
-        type = 'java',
-        project_path = vim.fn.getcwd(),
-        mainClass = 'org.example.Main', -- Replace with your main class
-      },
-    }
+    -- Java Debugger Configuration is handled by nvim-jdtls in ftplugin/java.lua
+    -- This ensures correct classpath resolution for Gradle/Maven projects.
 
     -- Change breakpoint icons
     -- vim.api.nvim_set_hl(0, 'DapBreak', { fg = '#e51400' })

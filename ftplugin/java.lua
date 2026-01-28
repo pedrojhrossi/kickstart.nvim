@@ -17,10 +17,20 @@ local jdtls_bin = mason_path .. '/bin/jdtls'
 local lombok_jar = mason_path .. '/packages/jdtls/lombok.jar'
 
 -- =============================================================================
+--  3. Debugging & Testing Bundles
+-- =============================================================================
+local bundles = {}
+local java_debug_path = mason_path .. '/packages/java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar'
+vim.list_extend(bundles, vim.split(vim.fn.glob(java_debug_path), '\n'))
+
+local java_test_path = mason_path .. '/packages/java-test/extension/server/*.jar'
+vim.list_extend(bundles, vim.split(vim.fn.glob(java_test_path), '\n'))
+
+-- =============================================================================
 --  4. Project Root Detection
 -- =============================================================================
 -- local root_markers = { 'settings.gradle', 'pom.xml', '.git', 'mvnw', 'gradlew' }
-local root_markers = { 'settings.gradle', '.git', 'mvnw' }
+local root_markers = { 'gradlew', '.git', 'mvnw' }
 
 local function find_project_root()
   return vim.fs.dirname(vim.fs.find(root_markers, { upward = true })[1])
@@ -46,9 +56,19 @@ local cmd = {
   '-data',
   home .. '/.config/jdtls/workspace',
 }
+
 local config = {
   cmd = cmd,
   root_dir = find_project_root(),
+  init_options = {
+    bundles = bundles,
+  },
+  on_attach = function(client, bufnr)
+    -- Enable DAP (Debugging)
+    require('jdtls').setup_dap { hotcodereplace = 'auto' }
+    -- Enable DAP UI Main Class discovery
+    require('jdtls.dap').setup_dap_main_class_configs()
+  end,
 }
 -- Check if a root was found before trying to start JDTLS
 if config.root_dir then
