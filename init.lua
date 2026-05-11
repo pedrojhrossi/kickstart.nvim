@@ -317,7 +317,8 @@ end
 ---function to have less repetition in the following sections.
 ---@param repo string
 ---@return string
-local function gh(repo) return 'https://github.com/' .. repo end
+_G.gh = function(repo) return 'https://github.com/' .. repo end
+local gh = _G.gh
 
 -- ============================================================
 -- SECTION 3: UI / CORE UX PLUGINS
@@ -383,18 +384,10 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
-  ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
-    styles = {
-      comments = { italic = false }, -- Disable italics in comments
-    },
-  }
+  vim.pack.add { gh 'nickkadutskyi/jb.nvim' }
 
   -- Load the colorscheme here.
-  -- Like many other themes, this one has different styles, and you could load
-  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
+  vim.cmd.colorscheme 'jb'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -687,7 +680,9 @@ do
   ---@type table<string, vim.lsp.Config>
   local servers = {
     -- clangd = {},
-    -- gopls = {},
+    gopls = {},
+    svelte = {},
+    solidity_ls_nomicfoundation = {},
     -- pyright = {},
     -- rust_analyzer = {},
     --
@@ -697,7 +692,7 @@ do
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     -- ts_ls = {},
 
-    stylua = {}, -- Used to format Lua code
+    -- stylua = {}, -- Removed from LSP list (it's a formatter)
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -739,6 +734,7 @@ do
     gh 'mason-org/mason.nvim',
     gh 'mason-org/mason-lspconfig.nvim',
     gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
+    gh 'mfussenegger/nvim-jdtls',
   }
 
   -- Automatically install LSPs and related tools to stdpath for Neovim
@@ -753,13 +749,15 @@ do
   -- You can press `g?` for help in this menu.
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
+    'stylua', -- Add stylua to Mason installer
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
   for name, server in pairs(servers) do
-    vim.lsp.config(name, server)
+    if server then
+      vim.lsp.config[name] = server
+    end
     vim.lsp.enable(name)
   end
 end
@@ -897,13 +895,16 @@ do
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
-  -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-  require('nvim-treesitter').install(parsers)
+  local treesitter_install = require 'nvim-treesitter.install'
+  treesitter_install.prefer_git = true
+  treesitter_install.compilers = { 'gcc', 'clang', 'cc' }
 
   ---@param buf integer
   ---@param language string
   local function treesitter_try_attach(buf, language)
+    -- Bypass Markdown to prevent Neovim v0.12.2 crash
+    if language == 'markdown' then return end
+
     -- Check if a parser exists and load it
     if not vim.treesitter.language.add(language) then return end
     -- Enable syntax highlighting and other treesitter features
@@ -970,7 +971,7 @@ do
   -- NOTE: You can add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- require 'custom.plugins'
+  require 'custom.plugins'
 end
 
 -- The line beneath this is called `modeline`. See `:help modeline`
