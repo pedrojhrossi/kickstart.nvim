@@ -19,12 +19,17 @@ local lombok_jar = mason_path .. '/packages/jdtls/lombok.jar'
 -- =============================================================================
 --  3. Debugging & Testing Bundles
 -- =============================================================================
+-- Only include the actual plugin JARs, not all dependencies
 local bundles = {}
-local java_debug_path = mason_path .. '/packages/java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar'
-vim.list_extend(bundles, vim.split(vim.fn.glob(java_debug_path), '\n'))
+local debug_bundle = vim.fn.glob(mason_path .. '/packages/java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar', true)
+if debug_bundle ~= '' then
+  table.insert(bundles, debug_bundle)
+end
 
-local java_test_path = mason_path .. '/packages/java-test/extension/server/*.jar'
-vim.list_extend(bundles, vim.split(vim.fn.glob(java_test_path), '\n'))
+local test_bundles = vim.fn.glob(mason_path .. '/packages/java-test/extension/server/com.microsoft.java.test.plugin-*.jar', true)
+if test_bundles ~= '' then
+  vim.list_extend(bundles, vim.split(test_bundles, '\n'))
+end
 
 -- =============================================================================
 --  4. Project Root Detection
@@ -50,19 +55,38 @@ if project_root then
     root_dir = project_root,
     init_options = {
       bundles = bundles,
+      extendedClientCapabilities = require('jdtls').extendedClientCapabilities,
     },
     on_attach = function(client, bufnr)
       -- Enable DAP (Debugging)
-      require('jdtls').setup_dap { hotcodereplace = 'auto' }
-      -- Enable DAP UI Main Class discovery
+      local jdtls = require 'jdtls'
+      jdtls.setup_dap { hotcodereplace = 'auto' }
       require('jdtls.dap').setup_dap_main_class_configs()
-      
+
+      -- Manual fallback configuration if automatic discovery fails
+      local dap = require 'dap'
+      dap.configurations.java = dap.configurations.java or {}
+      table.insert(dap.configurations.java, {
+        type = 'java',
+        request = 'launch',
+        name = 'Launch (Manual)',
+        mainClass = function()
+          return coroutine.create(function(dap_co)
+            vim.ui.input({ prompt = 'Main Class: ' }, function(input) coroutine.resume(dap_co, input) end)
+          end)
+        end,
+      })
+
       -- Set up keymaps for Java specifically if needed
       local map = function(keys, func, desc)
-        vim.keymap.set('n', keys, func, { buffer = bufnr, desc = 'Java: ' .. desc })
+        if func then
+          vim.keymap.set('n', keys, func, { buffer = bufnr, desc = 'Java: ' .. desc })
+        end
       end
-      
-      map('<leader>co', require('jdtls').optimize_imports, '[C]ode [O]ptimize Imports')
+
+      map('<leader>co', jdtls.organize_imports, '[C]ode [O]ptimize Imports')
+      map('<leader>df', jdtls.test_nearest_method, '[D]ebug [F]unction (Test)')
+      map('<leader>dc', jdtls.test_class, '[D]ebug [C]lass (Test)')
     end,
   }
 

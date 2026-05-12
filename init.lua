@@ -902,13 +902,12 @@ do
   ---@param buf integer
   ---@param language string
   local function treesitter_try_attach(buf, language)
-    -- Bypass Markdown to prevent Neovim v0.12.2 crash
-    if language == 'markdown' then return end
-
     -- Check if a parser exists and load it
-    if not vim.treesitter.language.add(language) then return end
+    if not pcall(vim.treesitter.language.add, language) then return end
+
     -- Enable syntax highlighting and other treesitter features
-    vim.treesitter.start(buf, language)
+    -- Using pcall to prevent crashes on experimental versions
+    pcall(vim.treesitter.start, buf, language)
 
     -- Enable treesitter based folds
     -- For more info on folds see `:help folds`
@@ -931,6 +930,12 @@ do
       local language = vim.treesitter.language.get_lang(filetype)
       if not language then return end
 
+      -- First check if Neovim already has this parser (e.g. it's bundled or installed)
+      if pcall(vim.treesitter.language.add, language) then
+        treesitter_try_attach(buf, language)
+        return
+      end
+
       local installed_parsers = require('nvim-treesitter').get_installed 'parsers'
 
       if vim.tbl_contains(installed_parsers, language) then
@@ -938,7 +943,10 @@ do
         treesitter_try_attach(buf, language)
       elseif vim.tbl_contains(available_parsers, language) then
         -- If a parser is available in `nvim-treesitter`, auto-install it and enable it after the installation is done
-        require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
+        -- Only attempt if we have a compiler or the CLI
+        if vim.fn.executable 'tree-sitter' == 1 or vim.fn.executable 'gcc' == 1 or vim.fn.executable 'clang' == 1 then
+          require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
+        end
       else
         -- Try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`
         treesitter_try_attach(buf, language)
