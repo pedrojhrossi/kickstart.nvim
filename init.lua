@@ -219,6 +219,27 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- Automatically run `packadd` for colorschemes in opt/ directories on demand
+vim.api.nvim_create_autocmd('ColorSchemePre', {
+  desc = 'Load colorscheme plugin dynamically if it is in an opt directory',
+  group = vim.api.nvim_create_augroup('kickstart-colorscheme-packadd', { clear = true }),
+  callback = function(ev)
+    local name = ev.match
+    for _, path in ipairs(vim.opt.packpath:get()) do
+      local opt_dir = vim.fs.joinpath(path, 'pack', '*', 'opt')
+      local colors_files = vim.fn.globpath(opt_dir, '*/colors/' .. name .. '.{vim,lua}', true, true)
+      if #colors_files > 0 then
+        local parts = vim.split(colors_files[1], '/')
+        local pkg_name = parts[#parts - 2]
+        if pkg_name then
+          pcall(vim.cmd.packadd, pkg_name)
+          break
+        end
+      end
+    end
+  end,
+})
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -677,7 +698,6 @@ require('lazy').setup({
         -- clangd = {},
         gopls = {},
         svelte = {},
-        solidity_ls_nomicfoundation = {},
         -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -899,7 +919,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'jb'
+      vim.cmd.colorscheme 'tokyonight-night'
     end,
   },
   {
