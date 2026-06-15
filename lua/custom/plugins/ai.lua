@@ -27,16 +27,18 @@ local function toggle_antigravity()
 
   -- If the buffer exists and is valid, reopen the window
   if antigravity_buf and vim.api.nvim_buf_is_valid(antigravity_buf) then
-    vim.cmd('botright split')
+    vim.cmd('botright vertical split')
     antigravity_win = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_width(antigravity_win, 65)
     vim.api.nvim_win_set_buf(antigravity_win, antigravity_buf)
     vim.cmd('startinsert')
     return
   end
 
-  -- Otherwise, create a new terminal split and run `agy`
-  vim.cmd('botright split')
+  -- Otherwise, create a new vertical terminal split and run `agy`
+  vim.cmd('botright vertical split')
   antigravity_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_width(antigravity_win, 65)
   vim.cmd('term agy')
   antigravity_buf = vim.api.nvim_get_current_buf()
   
