@@ -245,6 +245,27 @@ do
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
   })
+
+  -- Automatically run `packadd` for colorschemes in opt/ directories on demand
+  vim.api.nvim_create_autocmd('ColorSchemePre', {
+    desc = 'Load colorscheme plugin dynamically if it is in an opt directory',
+    group = vim.api.nvim_create_augroup('kickstart-colorscheme-packadd', { clear = true }),
+    callback = function(ev)
+      local name = ev.match
+      for _, path in ipairs(vim.opt.packpath:get()) do
+        local opt_dir = vim.fs.joinpath(path, 'pack', '*', 'opt')
+        local colors_files = vim.fn.globpath(opt_dir, '*/colors/' .. name .. '.{vim,lua}', true, true)
+        if #colors_files > 0 then
+          local parts = vim.split(colors_files[1], '/')
+          local pkg_name = parts[#parts - 2]
+          if pkg_name then
+            pcall(vim.cmd.packadd, pkg_name)
+            break
+          end
+        end
+      end
+    end,
+  })
 end
 
 -- ============================================================
@@ -387,7 +408,7 @@ do
   vim.pack.add { gh 'nickkadutskyi/jb.nvim' }
 
   -- Load the colorscheme here.
-  vim.cmd.colorscheme 'jb'
+  vim.cmd.colorscheme 'tokyonight-night'
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
@@ -682,7 +703,6 @@ do
     -- clangd = {},
     gopls = {},
     svelte = {},
-    solidity_ls_nomicfoundation = {},
     -- pyright = {},
     -- rust_analyzer = {},
     --
